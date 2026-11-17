@@ -1,0 +1,549 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Hardy–Berndt Sum Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=STIX+Two+Text:ital,wght@0,400;0,500;1,400&family=Instrument+Sans:wght@400;500;600&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0}
+[hidden]{display:none!important}
+/* Layout: one reading column of numbered "experiments", each a figure + controls + exact readout */
+:root{
+  --bg:#f3f5f9; --panel:#ffffff; --fg:#161a26; --muted:#5b6377; --line:#d9deea;
+  --accent:#2c3d9e; --pos:#c4511a; --neg:#1f6fb0; --ok:#2f7d4f; --warn:#b4570f;
+  --grid:#e6e9f1; --soft:#e9ecf6;
+  --display:"Instrument Serif", "Iowan Old Style", Georgia, serif;
+  --body:"Instrument Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono:"JetBrains Mono", ui-monospace, Menlo, monospace;
+  --math:"STIX Two Text", "Cambria Math", "Times New Roman", serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#10131b; --panel:#171b26; --fg:#e7eaf3; --muted:#9aa3b8; --line:#2a3042;
+  --accent:#8b9bff; --pos:#f08a4b; --neg:#5fb0f0; --ok:#5cc28a; --warn:#f0a35c;
+  --grid:#232838; --soft:#1e2333; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#10131b; --panel:#171b26; --fg:#e7eaf3; --muted:#9aa3b8; --line:#2a3042;
+  --accent:#8b9bff; --pos:#f08a4b; --neg:#5fb0f0; --ok:#5cc28a; --warn:#f0a35c;
+  --grid:#232838; --soft:#1e2333; color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.55}
+.wrap{max-width:980px;margin:0 auto;padding-block:40px 80px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:28px}
+header{display:flex;flex-direction:column;gap:10px}
+.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+h1{font-family:var(--display);font-weight:400;font-size:clamp(38px,6vw,58px);line-height:1.02;margin:0;text-wrap:balance}
+h1 i{color:var(--accent)}
+h2{font-family:var(--display);font-weight:400;font-size:30px;margin:0;line-height:1.1;text-wrap:balance}
+.sub{color:var(--muted);font-size:14px}
+p{margin:0;max-width:68ch}
+.def{font-family:var(--math);font-size:22px;line-height:1.4;padding:14px 18px;border-left:3px solid var(--accent);background:var(--soft);border-radius:0 6px 6px 0;max-width:none;overflow-x:auto}
+.def small{font-family:var(--body);font-size:13px;color:var(--muted);display:block;margin-top:4px}
+section{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:22px clamp(16px,3vw,28px);display:flex;flex-direction:column;gap:16px;min-width:0}
+.sechead{display:flex;flex-direction:column;gap:4px}
+.num{font-family:var(--mono);font-size:12px;color:var(--accent);letter-spacing:.06em}
+.controls{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center}
+label{font-size:13px;color:var(--muted);display:flex;gap:8px;align-items:center}
+input[type=number]{font-family:var(--mono);font-size:15px;width:7.5em;padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--fg)}
+button{font-family:var(--body);font-size:13px;font-weight:500;padding:7px 12px;border-radius:6px;border:1px solid var(--line);background:var(--bg);color:var(--fg);cursor:pointer}
+button:hover{border-color:var(--accent)}
+button.primary{background:var(--accent);color:var(--panel);border-color:var(--accent)}
+button[aria-pressed="true"]{background:var(--soft);border-color:var(--accent);color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-family:var(--mono);font-size:12px;padding:3px 9px;border-radius:99px;border:1px solid var(--line);background:var(--bg);color:var(--fg);cursor:pointer}
+.chip:hover{border-color:var(--accent);color:var(--accent)}
+.readout{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.cell{background:var(--panel);padding:10px 12px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.cell .k{font-size:12px;color:var(--muted)}
+.cell .v{font-family:var(--mono);font-size:16px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.cell .s{font-family:var(--mono);font-size:11px;color:var(--muted)}
+.checks{display:flex;flex-direction:column;gap:6px;font-size:13.5px}
+.check{display:flex;gap:10px;align-items:baseline}
+.pill{font-family:var(--mono);font-size:11px;padding:1px 7px;border-radius:99px;flex:none}
+.pill.ok{color:var(--ok);border:1px solid var(--ok)}
+.pill.bad{color:var(--warn);border:1px solid var(--warn)}
+.pill.info{color:var(--accent);border:1px solid var(--accent)}
+.figrow{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px}
+@media (max-width:720px){.figrow{grid-template-columns:minmax(0,1fr)}}
+figure{margin:0;display:flex;flex-direction:column;gap:6px;min-width:0}
+figcaption{font-size:12.5px;color:var(--muted)}
+canvas{width:100%;display:block;border-radius:6px;background:var(--panel)}
+.heat{image-rendering:pixelated;aspect-ratio:1/1;max-width:100%;border:1px solid var(--line)}
+.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:12.5px;color:var(--muted)}
+.legend span{display:inline-flex;gap:6px;align-items:center}
+.sw{width:10px;height:10px;border-radius:50%;display:inline-block}
+.tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:8px;max-height:360px}
+table{border-collapse:collapse;width:100%;font-family:var(--mono);font-size:12.5px;font-variant-numeric:tabular-nums}
+th,td{padding:5px 10px;text-align:right;border-bottom:1px solid var(--grid);white-space:nowrap}
+th{position:sticky;top:0;background:var(--soft);color:var(--muted);font-weight:500;font-family:var(--body)}
+tr.hit td{color:var(--accent);font-weight:500}
+.mono{font-family:var(--mono)}
+.status{font-family:var(--mono);font-size:12px;color:var(--muted)}
+.tri{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+@media (max-width:820px){.tri{grid-template-columns:minmax(0,1fr)}}
+.note{font-size:13px;color:var(--muted)}
+.toc{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:13px}
+.toc a{color:var(--muted);text-decoration:none;border-bottom:1px solid transparent;padding-bottom:2px}
+.toc a:hover{color:var(--accent);border-color:var(--accent)}
+.toc b{font-family:var(--mono);font-weight:500;color:var(--accent);margin-right:6px;font-size:11px}
+.findings{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+@media (max-width:760px){.findings{grid-template-columns:minmax(0,1fr)}}
+.finding{background:var(--panel);padding:16px 18px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.finding .big{font-family:var(--math);font-size:26px;line-height:1.15;font-variant-numeric:tabular-nums}
+.finding .big em{color:var(--accent);font-style:normal}
+.finding .what{font-size:13px;color:var(--muted)}
+.finding .tag{font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase}
+.finding .tag.proved{color:var(--ok)}.finding .tag.open{color:var(--warn)}
+.plotwrap{position:relative}
+.tip{position:absolute;pointer-events:none;transform:translate(-50%,calc(-100% - 10px));background:var(--fg);color:var(--bg);font-family:var(--mono);font-size:11.5px;line-height:1.45;padding:6px 9px;border-radius:6px;white-space:nowrap;z-index:2}
+.tip::after{content:"";position:absolute;left:50%;bottom:-4px;width:8px;height:8px;background:var(--fg);transform:translateX(-50%) rotate(45deg)}
+.ring{position:absolute;width:10px;height:10px;border:2px solid var(--fg);border-radius:50%;transform:translate(-50%,-50%);pointer-events:none}
+#gChart,#heat{cursor:crosshair}
+.hero{display:grid;grid-template-columns:minmax(0,1fr) 230px;gap:20px 32px;align-items:end}
+.herotext{display:flex;flex-direction:column;gap:10px;min-width:0}
+.herofig{margin:0;display:flex;flex-direction:column;gap:6px}
+.herofig canvas{width:100%;aspect-ratio:1/1;border-radius:8px;border:1px solid var(--line);image-rendering:pixelated}
+@media (max-width:760px){.hero{grid-template-columns:minmax(0,1fr)}.herofig{max-width:240px}}
+.tip.at-mouse{transform:translate(12px,12px)}.tip.at-mouse::after{display:none}
+.back{font-size:13px;color:var(--muted);text-decoration:none}.back:hover{color:var(--accent)}
+footer{font-size:12.5px;color:var(--muted);display:flex;flex-direction:column;gap:4px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+<header class="hero">
+<div class="herotext">
+  <a class="back" href="../#research">← Boyan (Karina) Li</a>
+  <div class="eyebrow">An interactive notebook on a Hardy–Berndt-type sum</div>
+  <h1>Hardy–Berndt Sum <i>Lab</i></h1>
+  <div class="def">
+    S(c) = Σ<sub>d=1</sub><sup>c</sup> Σ<sub>j=1</sub><sup>c</sup> (−1)<sup>⌊dj/c⌋</sup> ((j/c)),&nbsp;&nbsp; 𝒮(c) = −S(c)
+    <small>((x)) is the sawtooth: x − ⌊x⌋ − ½ off the integers, 0 on them. Extending j to 2c gives T₂(c); extending d to 2c gives T₁(c); extending both gives T(c) = 0.</small>
+  </div>
+  <nav class="toc" aria-label="Experiments">
+    <a href="#one"><b>1</b>One denominator</a>
+    <a href="#growth"><b>2</b>Pointwise growth</a>
+    <a href="#sums"><b>3</b>Summatory asymptotics</a>
+    <a href="#primes"><b>4</b>Prime denominators</a>
+    <a href="#fourier"><b>5</b>Fourier series</a>
+    <a href="#residues"><b>6</b>Residues of c</a>
+  </nav>
+</div>
+<figure class="herofig">
+  <canvas id="heroHeat" width="89" height="89" aria-label="Sign pattern of the summands for c = 89"></canvas>
+  <figcaption>All 89² summands of S(89): each pixel is (−1)<sup>⌊dj/c⌋</sup>((j/c)), <span style="color:var(--pos)">orange</span> positive, <span style="color:var(--neg)">blue</span> negative.</figcaption>
+</figure>
+</header>
+
+<div class="findings" aria-label="Key results">
+  <div class="finding"><span class="tag proved">Checked · Conjecture 6.12</span><span class="big">𝒮(<i>c</i>) &gt; 0</span><span class="what">for every 4 ≤ c ≤ 6000, with exact values.</span></div>
+  <div class="finding"><span class="tag proved">Checked · Theorem 6.9</span><span class="big"><em>29, 37, 3373</em></span><span class="what">are the only primes p &lt; 10⁶ with S(p) an integer.</span></div>
+  <div class="finding"><span class="tag open">New evidence · Question 6.13</span><span class="big"><em>−0.263</em> vs −0.029</span><span class="what">mean of 𝒮(c)/c − (log c)/4 for c up to 20000, against the constant in (6.18).</span></div>
+</div>
+
+<!-- 1. single denominator -->
+<section id="one">
+  <div class="sechead">
+    <span class="num">EXPERIMENT 1 · ONE DENOMINATOR</span>
+    <h2>Exact values at a single c</h2>
+  </div>
+  <div class="controls">
+    <label for="cIn">c =</label><input id="cIn" type="number" min="1" max="3000" value="29">
+    <button class="primary" id="cGo">Compute</button>
+    <div class="chips" id="cChips"></div>
+  </div>
+  <div class="readout" id="oneOut"></div>
+  <div class="checks" id="oneChecks"></div>
+  <div class="figrow">
+    <figure>
+      <div class="plotwrap"><div class="tip at-mouse" id="hTip" hidden></div><canvas id="heat" class="heat" width="300" height="300" aria-label="Sign matrix heatmap"></canvas></div>
+      <figcaption>Summand (−1)<sup>⌊dj/c⌋</sup>((j/c)): row d (top = 1), column j (left = 1). <span style="color:var(--pos)">Orange</span> positive, <span style="color:var(--neg)">blue</span> negative, intensity = |((j/c))|. Shown for c ≤ 400.</figcaption>
+    </figure>
+    <figure>
+      <canvas id="rows" height="300" data-square="1" aria-label="Row sums R_c(d)"></canvas>
+      <figcaption>Row sums R<sub>c</sub>(d) = Σ<sub>j</sub>(−1)<sup>⌊dj/c⌋</sup>((j/c)). Odd rows carry only the integral part S₁, even rows only S₂ (Theorem 6.1). <span style="color:var(--pos)">■</span> odd d, <span style="color:var(--neg)">■</span> even d.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- 2. growth -->
+<section id="growth">
+  <div class="sechead">
+    <span class="num">EXPERIMENT 2 · POINTWISE GROWTH</span>
+    <h2>Is 𝒮(c) positive, and how fast does it grow?</h2>
+    <span class="sub">Conjecture 6.12 (𝒮(c) ≥ 0) and Question 6.13 (pointwise asymptotics)</span>
+  </div>
+  <p class="note">The paper asks whether 𝒮(c) = (c/4)(log c − log 2 + γ) + o(c). The second view subtracts the main term (c log c)/4 and divides by c; if the proposed formula holds, the points should settle at (γ − log 2)/4 ≈ −0.0290.</p>
+  <div class="controls">
+    <label for="nIn">c up to</label><input id="nIn" type="number" min="50" max="6000" step="50" value="1500">
+    <button class="primary" id="nGo">Recompute</button>
+    <button id="vRaw" aria-pressed="true">𝒮(c)</button>
+    <button id="vNorm" aria-pressed="false">𝒮(c)/c − (log c)/4</button>
+    <button id="vDist" aria-pressed="false">Distribution</button>
+    <span class="status" id="nStatus"></span>
+  </div>
+  <figure>
+    <div class="plotwrap"><div class="ring" id="gRing" hidden></div><div class="tip" id="gTip" hidden></div>
+    <canvas id="gChart" height="380" aria-label="Growth of S(c)"></canvas></div>
+    <figcaption>Hover a point for its exact value. Click it to open that c in Experiment 1.</figcaption>
+    <div class="legend">
+      <span><i class="sw" style="background:var(--muted)"></i>composite c</span>
+      <span><i class="sw" style="background:var(--accent)"></i>prime c</span>
+      <span><i class="sw" style="background:var(--pos)"></i>c = 2<sup>k</sup></span>
+      <span><i class="sw" style="background:var(--ok)"></i>proposed main term</span>
+    </div>
+  </figure>
+  <div class="checks" id="gChecks"></div>
+</section>
+
+<!-- 3. summatory -->
+<section id="sums">
+  <div class="sechead">
+    <span class="num">EXPERIMENT 3 · SUMMATORY ASYMPTOTICS</span>
+    <h2>The three proved averages, converging</h2>
+    <span class="sub">Theorem 4.5 of the paper and Theorem 1.1 of the T₂ note</span>
+  </div>
+  <p class="note">Each curve is a normalised partial sum over c ≤ x; the dashed line is the proved limit. The T₂ sum carries an O(x²) error against an x² log x main term, so it closes in only like 1/log x.</p>
+  <div class="tri">
+    <figure><canvas id="s1" height="240"></canvas><figcaption>Σ T₁(c) / x² → ¼ − 7ζ(3)/(4π²) ≈ 0.036861</figcaption></figure>
+    <figure><canvas id="s2" height="240"></canvas><figcaption>V(x) / x² → −log 2 / 48 ≈ −0.014441</figcaption></figure>
+    <figure><canvas id="s3" height="240"></canvas><figcaption>Σ T₂(c) / (x² log x) → −¼</figcaption></figure>
+  </div>
+  <div class="checks" id="sChecks"></div>
+</section>
+
+<!-- 4. primes -->
+<section id="primes">
+  <div class="sechead">
+    <span class="num">EXPERIMENT 4 · PRIME DENOMINATORS</span>
+    <h2>When is S(p) an integer?</h2>
+    <span class="sub">Theorem 6.9: p·S(p) ≡ (q<sub>p</sub>(2) − 1)/2 (mod p), so S(p) ∈ ℤ ⇔ 2<sup>p−1</sup> ≡ 1 + p (mod p²)</span>
+  </div>
+  <p class="note">The table computes p·S(p) mod p from the literal double sum and compares it with the Fermat-quotient prediction. The search below uses only the congruence, with exact big-integer arithmetic.</p>
+  <div class="tablewrap"><table id="pTable"><thead><tr><th>p</th><th>S(p)</th><th>q<sub>p</sub>(2) mod p</th><th>(q−1)/2 mod p</th><th>p·S(p) mod p</th><th>match</th><th>S(p) ∈ ℤ</th></tr></thead><tbody></tbody></table></div>
+  <div class="controls">
+    <label for="pIn">search primes up to</label><input id="pIn" type="number" min="1000" max="20000000" step="100000" value="1000000">
+    <button class="primary" id="pGo">Search congruence</button>
+    <span class="status" id="pStatus"></span>
+  </div>
+  <div class="checks" id="pChecks"></div>
+  <div class="sechead" style="margin-top:6px">
+    <h2 style="font-size:22px">All integer values for c ≤ N</h2>
+    <span class="sub">Question 6.14: the c with S(c) an integer, over the range of Experiment 2</span>
+  </div>
+  <div class="chips" id="intChips"></div>
+</section>
+
+<!-- 5. fourier -->
+<section id="fourier">
+  <div class="sechead">
+    <span class="num">EXPERIMENT 5 · FOURIER REPRESENTATION</span>
+    <h2>A conditionally convergent series for S₂(c)</h2>
+    <span class="sub">Theorem 6.10: S₂(c) = (4/π) Σ<sub>j odd, j&lt;c</sub> (j/c − ½) Σ<sub>l odd</sub> (1/l) cot(πlj/(2c))</span>
+  </div>
+  <p class="note">The inner series converges only in its natural order, by Dirichlet's test, not absolutely. The chart shows the partial sums over l ≤ L against the exact value from the literal sum. Convergence is slow and oscillating, which is why the paper does not use this formula for the asymptotics.</p>
+  <div class="controls">
+    <label for="fIn">c =</label><input id="fIn" type="number" min="2" max="400" value="97">
+    <label for="fL">largest L</label><input id="fL" type="number" min="101" max="100001" step="1000" value="20001">
+    <button class="primary" id="fGo">Sum the series</button>
+  </div>
+  <figure><canvas id="fChart" height="300" aria-label="Partial sums of the Fourier series"></canvas>
+    <figcaption>Partial sum over odd l ≤ L, plotted against log₁₀ L. The dashed line is the exact S₂(c). The vertical range is fitted to L ≥ 10, so the first few terms may run off the top or bottom.</figcaption></figure>
+  <div class="checks" id="fChecks"></div>
+</section>
+
+<!-- 6. arithmetic of the O(c) term -->
+<section id="residues">
+  <div class="sechead">
+    <span class="num">EXPERIMENT 6 · BEYOND THE PAPER</span>
+    <h2>The O(c) term remembers c mod small odd numbers</h2>
+    <span class="sub">A follow-up to Question 6.13, not a result of either paper</span>
+  </div>
+  <p class="note">Experiment 2 shows that K(c) = 𝒮(c)/c − (log c)/4 keeps a spread of about ±0.115 that does not shrink. Grouping c by its residue mod q shows where much of that spread comes from. Each bar is the mean of K(c) over the top half of the Experiment 2 range, for one residue class. The dashed line is the overall mean.</p>
+  <div class="controls">
+    <span class="sub">modulus q</span>
+    <div class="chips" id="qChips"></div>
+  </div>
+  <figure><canvas id="qChart" height="280" aria-label="Mean of K(c) by residue of c"></canvas>
+    <figcaption><span style="color:var(--pos)">■</span> c ≡ −1 (mod q), <span style="color:var(--neg)">■</span> c ≡ 1 (mod q), <span style="color:var(--muted)">■</span> other residues.</figcaption></figure>
+  <div class="checks" id="qChecks"></div>
+  <p class="note">The pattern suggests one predictor built from the odd divisors of c + 1 and c − 1:</p>
+  <div class="def" style="font-size:19px">F(c) = Σ<sub>d | c+1, d odd</sub> φ(d)/d² − Σ<sub>d | c−1, d odd</sub> φ(d)/d²
+    <small>This is an empirical guess, chosen because it matches the residue pattern above. Nothing in either paper predicts it.</small></div>
+  <figure><canvas id="fcChart" height="320" aria-label="K(c) against F(c)"></canvas>
+    <figcaption>Each dot is one c in the top half of the Experiment 2 range. The green line is the least-squares fit.</figcaption></figure>
+  <div class="checks" id="fcChecks"></div>
+</section>
+
+<footer>
+  <span>All values in Experiment 1 and the prime table come from integer arithmetic on the literal sums. Experiments 2–3 use the divisor formula for T₁ and the Dedekind-sum formula for T₂ in floating point; since c·S(c) ∈ ℤ, each S(c) is rounded to the exact fraction before it is plotted.</span>
+</footer>
+</div>
+
+<script id="engineSrc" type="text/plain">
+const gcd=(a,b)=>{while(b){const t=a%b;a=b;b=t}return a};
+function ded(a,c){a=((a%c)+c)%c;if(a===0)return 0;const g=gcd(a,c);a/=g;c/=g;let h=a,k=c,sg=1,acc=0;
+  while(h!==0){acc+=sg*((h/k+k/h+1/(h*k))/12-0.25);const nh=k%h;k=h;h=nh;sg=-sg}return acc}
+function phi(n){let r=n;for(let p=2;p*p<=n;p++)if(n%p===0){while(n%p===0)n/=p;r-=r/p}if(n>1)r-=r/n;return r}
+function T1f(c){let s=0;for(let D=1;D<=c;D+=2)if(c%D===0)s+=(D-1)/(2*D)*phi(2*c/D);return s}
+function T2parts(c){let u=0,v=0;for(let r=1;r<=Math.floor(c/2);r++){u+=ded(r,c);v+=ded(2*r,c)}return {u,v,T2:4*(v-2*u)}}
+const delta=c=>c%2?(c-1)/(4*c):0;
+</script>
+<script>
+// ---------- shared engine ----------
+const ENGINE=document.getElementById('engineSrc').textContent;
+(0,eval)(ENGINE);
+const $=id=>document.getElementById(id);
+const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const GAMMA=0.5772156649015329, LN2=Math.LN2, ZETA3=1.2020569031595942;
+function isPrime(n){if(n<2)return false;if(n%2===0)return n===2;for(let k=3;k*k<=n;k+=2)if(n%k===0)return false;return true}
+const isPow2=n=>n>0&&(n&(n-1))===0;
+function bgcd(a,b){a=a<0n?-a:a;b=b<0n?-b:b;while(b){[a,b]=[b,a%b]}return a}
+function frac(n,d){ // n,d Numbers (safe ints) -> reduced string
+  let N=BigInt(n),D=BigInt(d);if(D<0n){N=-N;D=-D}const g=bgcd(N,D)||1n;N/=g;D/=g;
+  return (D===1n?N.toString():`${N}/${D}`).replace('-','−')}
+const fmt=(x,k=6)=>(Math.abs(x)>=1e5?x.toExponential(4):(+x.toFixed(k)).toString()).replace('-','−');
+const lbl=v=>String(v).replace('-','−');
+
+// ---------- canvas plotting ----------
+function setupCanvas(cv){const dpr=window.devicePixelRatio||1;const w=cv.clientWidth,h=cv.dataset.square?w:+(cv.dataset.h||(cv.dataset.h=cv.getAttribute('height')));
+  cv.style.height=h+'px';cv.width=Math.round(w*dpr);cv.height=Math.round(h*dpr);const g=cv.getContext('2d');g.setTransform(dpr,0,0,dpr,0,0);return {g,w,h}}
+function niceTicks(lo,hi,n=5){const span=hi-lo||1;const step0=span/n;const mag=10**Math.floor(Math.log10(step0));
+  const step=[1,2,2.5,5,10].map(m=>m*mag).find(s=>s>=step0);const out=[];for(let t=Math.ceil(lo/step)*step;t<=hi+1e-12;t+=step)out.push(+t.toPrecision(12));return out}
+function plot(cv,o){
+  const {g,w,h}=setupCanvas(cv);const pad={l:o.padL||58,r:12,t:12,b:34};
+  const fg=css('--fg'),mu=css('--muted'),gr=css('--grid');
+  let [x0,x1]=o.xr,[y0,y1]=o.yr;const X=x=>pad.l+(x-x0)/(x1-x0)*(w-pad.l-pad.r),Y=y=>h-pad.b-(y-y0)/(y1-y0)*(h-pad.t-pad.b);
+  g.clearRect(0,0,w,h);g.font='11px "JetBrains Mono", ui-monospace, monospace';g.lineWidth=1;
+  const yt=niceTicks(y0,y1,o.yTicks||5),xt=niceTicks(x0,x1,Math.max(3,Math.floor((w-pad.l)/90)));
+  g.strokeStyle=gr;g.fillStyle=mu;g.textAlign='right';g.textBaseline='middle';
+  yt.forEach(t=>{g.beginPath();g.moveTo(pad.l,Y(t)+.5);g.lineTo(w-pad.r,Y(t)+.5);g.stroke();g.fillText(lbl(o.yfmt?o.yfmt(t):t),pad.l-6,Y(t))});
+  g.textAlign='center';g.textBaseline='top';xt.forEach(t=>g.fillText(lbl(o.xfmt?o.xfmt(t):t),X(t),h-pad.b+6));
+  g.save();g.beginPath();g.rect(pad.l,pad.t,w-pad.l-pad.r,h-pad.t-pad.b);g.clip();
+  (o.vrefs||[]).forEach(r=>{const c=css(r.color);g.strokeStyle=c;g.setLineDash(r.dash||[]);g.lineWidth=2;g.beginPath();g.moveTo(X(r.x),pad.t);g.lineTo(X(r.x),h-pad.b);g.stroke();g.setLineDash([]);g.fillStyle=c;const al=X(r.x)+6+g.measureText(r.label).width>w-pad.r?'right':'left';g.textAlign=al;g.textBaseline='top';g.fillText(r.label,X(r.x)+(al==='right'?-6:6),pad.t+(r.dy||18))});
+  (o.refs||[]).forEach(r=>{g.strokeStyle=css(r.color);g.setLineDash([5,4]);g.lineWidth=1.3;g.beginPath();g.moveTo(pad.l,Y(r.y));g.lineTo(w-pad.r,Y(r.y));g.stroke();g.setLineDash([])});
+  (o.series||[]).forEach(s=>{const c=css(s.color);
+    if(s.type==='line'){g.strokeStyle=c;g.lineWidth=s.width||1.6;if(s.dash)g.setLineDash(s.dash);g.beginPath();
+      for(let i=0;i<s.x.length;i++){const px=X(s.x[i]),py=Y(s.y[i]);i?g.lineTo(px,py):g.moveTo(px,py)}g.stroke();g.setLineDash([]);
+      if(s.end){const i=s.x.length-1;g.fillStyle=c;g.beginPath();g.arc(X(s.x[i]),Y(s.y[i]),3,0,7);g.fill()}}
+    else if(s.type==='bar'){const bw=Math.max(1,(X(x0+(s.bw||1))-X(x0))*(s.gap||.8));for(let i=0;i<s.x.length;i++){g.fillStyle=css(s.colorOf(i));const a=Y(s.base??0),b=Y(s.y[i]);g.fillRect(X(s.x[i])-bw/2,Math.min(a,b),bw,Math.max(1,Math.abs(a-b)))}}
+    else{const r=s.r||1.6;for(let i=0;i<s.x.length;i++){g.fillStyle=s.colorOf?css(s.colorOf(i)):c;g.beginPath();g.arc(X(s.x[i]),Y(s.y[i]),s.rOf?s.rOf(i):r,0,7);g.fill()}}});
+  g.restore();g.strokeStyle=mu;g.beginPath();g.moveTo(pad.l+.5,pad.t);g.lineTo(pad.l+.5,h-pad.b+.5);g.lineTo(w-pad.r,h-pad.b+.5);g.stroke();
+  if(o.ylabel){g.fillStyle=fg;g.textAlign='left';g.textBaseline='top';g.font='italic 13px "STIX Two Text", serif';g.fillText(o.ylabel,pad.l+8,pad.t+2);g.font='11px "JetBrains Mono", ui-monospace, monospace'}
+  cv._X=X;cv._Y=Y;cv._inv=px=>x0+(px-pad.l)/(w-pad.l-pad.r)*(x1-x0);
+  if(o.xlabel){g.fillStyle=mu;g.textAlign='right';g.textBaseline='bottom';g.fillText(o.xlabel,w-pad.r,h-pad.b-4)}
+}
+function range(arr,padFrac=.06){let lo=Infinity,hi=-Infinity;for(const v of arr){if(v<lo)lo=v;if(v>hi)hi=v}const p=(hi-lo||1)*padFrac;return [lo-p,hi+p]}
+function check(el,items){el.innerHTML=items.map(([cls,tag,txt])=>`<div class="check"><span class="pill ${cls}">${tag}</span><span>${txt}</span></div>`).join('')}
+
+// ---------- Experiment 1 ----------
+const ONE={};
+function computeOne(c){
+  let N=0,N1=0;const R=new Float64Array(c+1);
+  for(let d=1;d<=c;d++){let rs=0;for(let j=1;j<c;j++){const v=(2*j-c)*((Math.floor(d*j/c)&1)?-1:1);rs+=v;if((d*j)%c===0)N1+=v}N+=rs;R[d]=rs/(2*c)}
+  const den=2*c;const dNum=c%2?(c-1)/2:0; // delta = dNum/(2c)
+  return {c,N,N1,N2:N-N1,den,dNum,R}}
+function renderOne(){
+  let c=Math.round(+$('cIn').value);if(!(c>=1))c=1;if(c>3000)c=3000;$('cIn').value=c;
+  const r=computeOne(c);Object.assign(ONE,r);
+  const S=r.N/r.den,T1=2*(r.N1-r.dNum)/r.den,T2=2*r.N2/r.den;
+  const cells=[
+    ['S(c)',frac(r.N,r.den),fmt(S)],['𝒮(c) = −S(c)',frac(-r.N,r.den),fmt(-S)],
+    ['S₁(c)  integral part',frac(r.N1,r.den),fmt(r.N1/r.den)],['S₂(c)  nonintegral part',frac(r.N2,r.den),fmt(r.N2/r.den)],
+    ['T₁(c)',frac(2*(r.N1-r.dNum),r.den),fmt(T1)],['T₂(c)',frac(2*r.N2,r.den),fmt(T2)],
+    ['δ(c)',frac(r.dNum,r.den),c%2?'c odd':'c even'],['{S(c)} fractional part',frac(((r.N%r.den)+r.den)%r.den,r.den),'']];
+  $('oneOut').innerHTML=cells.map(([k,v,s])=>`<div class="cell"><span class="k">${k}</span><span class="v">${v}</span><span class="s">${s}</span></div>`).join('');
+  const t1=T1f(c),{T2:t2}=T2parts(c);const items=[];
+  items.push([Math.abs(t1-T1)<1e-7?'ok':'bad','Thm 4.1',`Divisor formula Σ<sub>D|c, D odd</sub> (D−1)/(2D)·φ(2c/D) = ${fmt(t1)} vs literal ${fmt(T1)}`]);
+  {const z=Math.abs(T1)<1e-12,sc=Math.abs(T1f(2*c)-2*T1)<1e-7,bd=T1>=-1e-12&&T1<=c/2+1e-12;
+   items.push([(z===isPow2(c))&&sc&&bd?'ok':'bad','Cor 4.2',`0 ≤ T₁(c) ≤ c/2, T₁(c) ${z?'= 0 and c is':'≠ 0 and c is not'} a power of 2, and T₁(2c) = ${fmt(T1f(2*c))} = 2T₁(c)`])}
+  {const pk=primePower(c);if(pk&&pk[0]>2){const [pp,k]=pk,pr=(c-pp**-k)/(2*(pp+1));items.push([Math.abs(pr-T1)<1e-9?'ok':'bad','Cor 4.3',`c = ${pp}${k>1?'<sup>'+k+'</sup>':''}: (p<sup>k</sup> − p<sup>−k</sup>)/(2(p+1)) = ${fmt(pr)}`])}}
+  items.push([Math.abs(t2-T2)<1e-6?'ok':'bad','Thm 5.3',`Dedekind form 4Σ<sub>r≤c/2</sub>(s(2r,c) − 2s(r,c)) = ${fmt(t2)} vs literal ${fmt(T2)}`]);
+  {let sA=0;for(let q=1;q<=c;q++)if(c%q===0)sA+=A2(q);items.push([Math.abs(sA-T2)<1e-6?'ok':'bad','T₂ note 2.1',`Σ<sub>q|c</sub> A₂(q) = ${fmt(sA)} = T₂(c); |T₂(c)|/(c log²(2c)) = ${(Math.abs(T2)/(c*Math.log(2*c)**2)).toFixed(4)} (Thm 3.3 says this stays bounded)`])}
+  items.push(['ok','(6.3)',`S(c) = (T₁ + T₂)/2 + δ(c) holds exactly by construction of S₁, S₂ from the literal sum`]);
+  items.push([(r.N%2===0)?'ok':'bad','Thm 6.5',`c·S(c) = ${lbl(r.N/2)} ∈ ℤ`]);
+  if(isPow2(c)&&c>=4)items.push([((r.N%r.den)+r.den)%r.den===c?'ok':'bad','Thm 6.6',`c = 2<sup>k</sup>, k ≥ 2, so {S(c)} should be ½: got ${frac(((r.N%r.den)+r.den)%r.den,r.den)}`]);
+  if(c%6===4){const t=(c-4)/6,d=4*t+2,val=r.R[d];items.push([Math.abs(val-(t-1)/2)<1e-9?'ok':'bad','Prop 6.11',`c = 6t+4 with t = ${t}: R<sub>c</sub>(${d}) = ${fmt(val)}, predicted (t−1)/2 = ${(t-1)/2}`])}
+  if(c>3)items.push([S<0?'ok':'bad','Conj 6.12',`𝒮(c) = ${fmt(-S)} ${S<0?'> 0':'≤ 0 (counterexample!)'}`]);
+  if(isPrime(c)&&c>=5){const P=BigInt(c);const q=(mp(2n,P-1n,P*P)-1n)/P%P;items.push([(r.N%r.den===0)===(q===1n)?'ok':'bad','Thm 6.9',`p = ${c}: q<sub>p</sub>(2) ≡ ${q} (mod p), so S(p) ${q===1n?'is':'is not'} an integer`])}
+  check($('oneChecks'),items);drawHeat();drawRows();
+}
+function drawHeat(cv=$('heat'),c=ONE.c){const g=cv.getContext('2d');
+  if(c>400){cv.width=1;cv.height=1;g.clearRect(0,0,1,1);return}
+  cv.width=c;cv.height=c;const img=g.createImageData(c,c);
+  const pc=hex(css('--pos')),nc=hex(css('--neg')),bg=hex(css('--panel'));
+  for(let d=1;d<=c;d++)for(let j=1;j<=c;j++){const w=j===c?0:Math.abs(j/c-.5)*2;const v=(j===c?0:(j/c-.5))*((Math.floor(d*j/c)&1)?-1:1);
+    const col=v>0?pc:nc;const a=.12+.88*w;const k=((d-1)*c+(j-1))*4;
+    for(let q=0;q<3;q++)img.data[k+q]=Math.round(bg[q]*(1-a)+col[q]*a);img.data[k+3]=255;if(j===c){for(let q=0;q<3;q++)img.data[k+q]=bg[q]}}
+  g.putImageData(img,0,0)}
+function hex(s){s=s.replace('#','');if(s.length===3)s=s.split('').map(x=>x+x).join('');return [0,2,4].map(i=>parseInt(s.slice(i,i+2),16))}
+function drawRows(){const c=ONE.c;const xs=[],ys=[];for(let d=1;d<=c;d++){xs.push(d);ys.push(ONE.R[d])}
+  const [lo,hi]=range(ys.concat([0]));plot($('rows'),{xr:[0.5,c+.5],yr:[lo,hi],xlabel:'d',ylabel:'R_c(d)',series:[{type:'bar',x:xs,y:ys,colorOf:i=>xs[i]%2?'--pos':'--neg'}]})}
+function mp(b,e,m){let r=1n;b%=m;while(e>0n){if(e&1n)r=r*b%m;b=b*b%m;e>>=1n}return r}
+function primePower(n){if(n<2)return null;let p=2;while(n%p)p++;let k=0,m=n;while(m%p===0){m/=p;k++}return m===1?[p,k]:null}
+const igcd=(a,b)=>{while(b){const t=a%b;a=b;b=t}return a};
+function A2(q){let s=0;for(let a=1;a<=Math.floor(q/2);a++)if(igcd(a,q)===1)s+=ded(2*a,q)-2*ded(a,q);return 4*s}
+// heat hover
+(function(){const cv=$('heat'),tip=$('hTip');
+  cv.addEventListener('pointermove',e=>{const c=ONE.c;if(!c||c>400){tip.hidden=true;return}const r=cv.getBoundingClientRect();
+    const j=Math.min(c,Math.floor((e.clientX-r.left)/r.width*c)+1),d=Math.min(c,Math.floor((e.clientY-r.top)/r.height*c)+1);
+    const q=Math.floor(d*j/c),sg=q%2?'−':'+';
+    tip.innerHTML=`d = ${d}, j = ${j}<br>⌊dj/c⌋ = ${q}, sign ${sg}1<br>((j/c)) = ${j===c?'0':frac(2*j-c,2*c)}`;
+    tip.style.left=(e.clientX-r.left)+'px';tip.style.top=(e.clientY-r.top)+'px';tip.hidden=false});
+  cv.addEventListener('pointerleave',()=>{tip.hidden=true})})();
+
+// chips
+const PRESET=[[29,'S∈ℤ prime'],[37,'S∈ℤ prime'],[64,'2⁶'],[22,'6t+4'],[105,'3·5·7'],[360,''],[997,'prime']];
+$('cChips').innerHTML=PRESET.map(([c,t])=>`<button class="chip" data-c="${c}">${c}${t?' · '+t:''}</button>`).join('');
+$('cChips').addEventListener('click',e=>{const b=e.target.closest('[data-c]');if(b){$('cIn').value=b.dataset.c;renderOne()}});
+$('cGo').onclick=renderOne;$('cIn').addEventListener('keydown',e=>{if(e.key==='Enter')renderOne()});$('cIn').addEventListener('change',renderOne);
+
+// ---------- Experiments 2/3 via worker ----------
+const workerSrc=ENGINE+`
+onmessage=e=>{const N=e.data.N;const S=new Float64Array(N+1),num=new Float64Array(N+1),T1=new Float64Array(N+1),T2=new Float64Array(N+1),U=new Float64Array(N+1),V=new Float64Array(N+1);
+ for(let c=1;c<=N;c++){const t1=T1f(c),p=T2parts(c);T1[c]=t1;T2[c]=p.T2;U[c]=p.u;V[c]=p.v;const s=(t1+p.T2)/2+delta(c);num[c]=Math.round(c*s);S[c]=num[c]/c;
+  if(c%200===0)postMessage({progress:c})}
+ postMessage({done:true,S,num,T1,T2,U,V},[S.buffer,num.buffer,T1.buffer,T2.buffer,U.buffer,V.buffer])}`;
+let worker=null;const W=URL.createObjectURL(new Blob([workerSrc],{type:'text/javascript'}));
+let DATA=null,VIEW='raw';
+function runRange(){let N=Math.round(+$('nIn').value);if(!(N>=50))N=50;if(N>6000)N=6000;$('nIn').value=N;
+  if(worker)worker.terminate();worker=new Worker(W);const t0=performance.now();$('nStatus').textContent='computing…';
+  worker.onmessage=e=>{if(e.data.progress){$('nStatus').textContent=`computing… c = ${e.data.progress} / ${N}`;return}
+    DATA={...e.data,N};$('nStatus').textContent=`${N} values in ${((performance.now()-t0)/1000).toFixed(1)} s`;drawGrowth();drawSums();renderInts();drawMod()};
+  worker.postMessage({N})}
+function drawGrowth(){if(!DATA)return;const {S,N}=DATA;const xs=[],ys=[],cat=[];
+  for(let c=4;c<=N;c++){const v=-S[c];xs.push(c);ys.push(VIEW==='raw'?v:v/c-Math.log(c)/4);cat.push(isPow2(c)?'--pos':isPrime(c)?'--accent':'--muted')}
+  const mx=[],my=[];for(let c=4;c<=N;c+=Math.max(1,Math.floor(N/300))){mx.push(c);my.push(VIEW==='raw'?c/4*(Math.log(c)-LN2+GAMMA):(GAMMA-LN2)/4)}
+  let [lo,hi]=range(ys.concat(my));if(VIEW==='raw')lo=Math.min(lo,0);
+  if(VIEW==='dist')drawDist();else plot($('gChart'),{xr:[0,N],yr:[lo,hi],xlabel:'c',ylabel:VIEW==='raw'?'𝒮(c)':'𝒮(c)/c − (log c)/4',padL:62,yfmt:VIEW==='raw'?null:(t=>t.toFixed(2)),refs:VIEW==='raw'?[{y:0,color:'--muted'}]:[],
+    series:[{type:'dot',x:xs,y:ys,colorOf:i=>cat[i],rOf:i=>cat[i]==='--muted'?1.3:2.1},{type:'line',x:mx,y:my,color:'--ok',width:1.8,dash:VIEW==='raw'?null:[6,4]}]});
+  // checks
+  let minV=Infinity,minC=0,neg=[];for(let c=4;c<=N;c++){const v=-S[c];if(v<=0)neg.push(c);if(v/(c*Math.log(c))<minV){minV=v/(c*Math.log(c));minC=c}}
+  const tail=[];for(let c=Math.floor(N*.8);c<=N;c++)tail.push(-S[c]/c-Math.log(c)/4);const mean=tail.reduce((a,b)=>a+b,0)/tail.length;
+  const sd=Math.sqrt(tail.reduce((a,b)=>a+(b-mean)**2,0)/tail.length);
+  const blocks=[[N/8,N/4],[N/4,N/2],[N/2,N]].map(([a,b])=>{a=Math.max(4,Math.ceil(a));b=Math.floor(b);const v=[];for(let c=a;c<=b;c++)v.push(-S[c]/c-Math.log(c)/4);
+    const m=v.reduce((x,y)=>x+y,0)/v.length;return {a,b,m,sd:Math.sqrt(v.reduce((x,y)=>x+(y-m)**2,0)/v.length),E:(GAMMA-LN2)/4-m}});
+  check($('gChecks'),[
+    [neg.length?'bad':'ok','Conj 6.12',neg.length?`𝒮(c) ≤ 0 at c = ${neg.slice(0,10).join(', ')}`:`𝒮(c) > 0 for every 4 ≤ c ≤ ${N}. Smallest ratio 𝒮(c)/(c log c) = ${minV.toFixed(4)} at c = ${minC}.`],
+    ['bad','Q 6.13',`Over the top 20% of the range, 𝒮(c)/c − (log c)/4 has mean ${mean.toFixed(4)} and spread ±${sd.toFixed(4)}. The proposed constant is ${((GAMMA-LN2)/4).toFixed(4)}. The mean does not drift toward it and the spread does not shrink (blocks below), which is numerical evidence against the o(c) form (6.18), though it is consistent with the weaker 𝒮(c) = (c log c)/4 + O(c).`]]);
+  $('gChecks').insertAdjacentHTML('beforeend',`<div class="tablewrap" style="max-height:none"><table><thead><tr><th>c range</th><th>mean of 𝒮(c)/c − (log c)/4</th><th>spread (sd)</th><th>implied mean of (1/c)·Σ<sub>d</sub>E(c,d)</th></tr></thead><tbody>${
+    blocks.map(b=>`<tr><td>${b.a}–${b.b}</td><td>${b.m.toFixed(4)}</td><td>±${b.sd.toFixed(4)}</td><td>${b.E.toFixed(4)}</td></tr>`).join('')}</tbody></table></div>
+    <span class="note">By (6.20), (6.18) is equivalent to Σ<sub>d</sub> E(c,d) = o(c). The last column is (γ − log 2)/4 minus the block mean, i.e. the average size of that total row error divided by c. It should tend to 0 under (6.18).</span>`)}
+function drawDist(){const {S,N}=DATA;const a=Math.ceil(N/2),v=[];for(let c=a;c<=N;c++)v.push(-S[c]/c-Math.log(c)/4);
+  const m=v.reduce((x,y)=>x+y,0)/v.length;let lo=Math.min(...v,(GAMMA-LN2)/4),hi=Math.max(...v,(GAMMA-LN2)/4);const pad=(hi-lo)*.04;lo-=pad;hi+=pad;
+  const B=40,bw=(hi-lo)/B,cnt=new Array(B).fill(0);v.forEach(x=>cnt[Math.min(B-1,Math.floor((x-lo)/bw))]++);
+  const xs=cnt.map((_,i)=>lo+(i+.5)*bw),ys=cnt.map(k=>k/v.length/bw);
+  plot($('gChart'),{xr:[lo,hi],yr:[0,Math.max(...ys)*1.12],ylabel:$('gChart').clientWidth<520?'density':`density of 𝒮(c)/c − (log c)/4 over ${a} ≤ c ≤ ${N}`,padL:52,yfmt:t=>t.toFixed(1),xfmt:t=>t.toFixed(2),
+    vrefs:[{x:m,color:'--accent',label:`mean ${lbl(m.toFixed(3))}`,align:m<(GAMMA-LN2)/4?'right':'left',dy:22},{x:(GAMMA-LN2)/4,color:'--ok',dash:[6,4],label:'(6.18): −0.029',dy:40}],
+    series:[{type:'bar',x:xs,y:ys,bw,gap:.9,colorOf:()=>'--neg'}]})}
+function drawSums(){if(!DATA)return;const {T1,T2,V,N}=DATA;const step=Math.max(1,Math.floor(N/400));
+  const a={x:[],y:[]},b={x:[],y:[]},d={x:[],y:[]};let s1=0,s2=0,sv=0;
+  for(let c=1;c<=N;c++){s1+=T1[c];s2+=T2[c];sv+=V[c];if(c>=20&&(c%step===0||c===N)){a.x.push(c);a.y.push(s1/c/c);b.x.push(c);b.y.push(sv/c/c);d.x.push(c);d.y.push(s2/(c*c*Math.log(c)))}}
+  const L1=.25-7*ZETA3/(4*Math.PI**2),L2=-LN2/48,L3=-.25;
+  const draw=(cv,s,L,f)=>{const [lo,hi]=range(s.y.concat([L]),.1);plot(cv,{xr:[0,N],yr:[lo,hi],padL:58,yfmt:f,yTicks:4,xlabel:'x',refs:[{y:L,color:'--ok'}],series:[{type:'line',x:s.x,y:s.y,color:'--accent',end:true}]})};
+  draw($('s1'),a,L1,t=>t.toFixed(4));draw($('s2'),b,L2,t=>t.toFixed(4));draw($('s3'),d,L3,t=>t.toFixed(3));
+  const last=a=>a.y[a.y.length-1];
+  check($('sChecks'),[
+    ['info','Thm 4.5',`At x = ${N}: Σ T₁/x² = ${last(a).toFixed(6)}, limit ${L1.toFixed(6)} (gap ${(last(a)-L1).toExponential(2)})`],
+    ['info','T₂ note (1.5)',`V(x)/x² = ${last(b).toFixed(6)}, limit ${L2.toFixed(6)} (gap ${(last(b)-L2).toExponential(2)})`],
+    ['info','T₂ note (1.6)',`Σ T₂/(x² log x) = ${last(d).toFixed(4)}, limit −0.25; the gap times log x is ${((last(d)+.25)*Math.log(N)).toFixed(3)}, the size of the O(x²) term`]])}
+function renderInts(){const {num,N}=DATA;const out=[];for(let c=1;c<=N;c++)if(num[c]%c===0)out.push(c);
+  $('intChips').innerHTML=out.map(c=>`<button class="chip" data-c="${c}" title="S(c) = ${num[c]/c}">${c}${isPrime(c)?'ᵖ':''} → ${num[c]/c}</button>`).join('')+
+  `<span class="note" style="align-self:center">${out.length} values of c ≤ ${N} with S(c) ∈ ℤ (ᵖ = prime). Click one to open it in Experiment 1.</span>`}
+$('intChips').addEventListener('click',e=>{const b=e.target.closest('[data-c]');if(b&&+b.dataset.c<=3000){$('cIn').value=b.dataset.c;renderOne();$('one').scrollIntoView({behavior:'smooth'})}});
+
+// growth chart hover + click
+(function(){const cv=$('gChart'),tip=$('gTip'),ring=$('gRing');
+  const at=e=>{if(!DATA||!cv._inv||VIEW==='dist')return null;const r=cv.getBoundingClientRect();const c=Math.round(cv._inv(e.clientX-r.left));return c>=4&&c<=DATA.N?c:null};
+  cv.addEventListener('pointermove',e=>{const c=at(e);if(c==null){tip.hidden=ring.hidden=true;return}
+    const v=-DATA.S[c],y=VIEW==='raw'?v:v/c-Math.log(c)/4,x=cv._X(c),yy=cv._Y(y);
+    const kind=isPow2(c)?'power of 2':isPrime(c)?'prime':'composite';
+    tip.innerHTML=`c = ${c} · ${kind}<br>𝒮(c) = ${frac(-DATA.num[c],c)} ≈ ${fmt(v,3)}<br>𝒮(c)/c − (log c)/4 = ${fmt(v/c-Math.log(c)/4,4)}`;
+    tip.style.left=x+'px';tip.style.top=yy+'px';ring.style.left=x+'px';ring.style.top=yy+'px';tip.hidden=ring.hidden=false});
+  cv.addEventListener('pointerleave',()=>{tip.hidden=ring.hidden=true});
+  cv.addEventListener('click',e=>{const c=at(e);if(c!=null&&c<=3000){$('cIn').value=c;renderOne();$('one').scrollIntoView({behavior:'smooth'})}});
+})();
+$('nGo').onclick=runRange;$('nIn').addEventListener('keydown',e=>{if(e.key==='Enter')runRange()});
+const setView=v=>{VIEW=v;[['vRaw','raw'],['vNorm','norm'],['vDist','dist']].forEach(([id,k])=>$(id).setAttribute('aria-pressed',String(k===v)));drawGrowth()};
+$('vRaw').onclick=()=>setView('raw');$('vDist').onclick=()=>setView('dist');
+$('vNorm').onclick=()=>setView('norm');
+
+// ---------- Experiment 4 ----------
+function primeTable(){const rows=[];for(let p=5;p<=211;p++){if(!isPrime(p))continue;let N=0;for(let d=1;d<=p;d++)for(let j=1;j<p;j++)N+=(2*j-p)*((Math.floor(d*j/p)&1)?-1:1);
+  const P=BigInt(p);const q=(mp(2n,P-1n,P*P)-1n)/P%P;const pred=((q-1n)*((P+1n)/2n))%P;const pS=(((BigInt(N/2))%P)+P)%P; // pS(p) = N/2
+  const isInt=N%(2*p)===0;rows.push(`<tr class="${isInt?'hit':''}"><td>${p}</td><td>${frac(N,2*p)}</td><td>${q}</td><td>${(pred+P)%P}</td><td>${pS}</td><td>${(pred+P)%P===pS?'✓':'✗'}</td><td>${isInt?'yes':''}</td></tr>`)}
+  $('pTable').tBodies[0].innerHTML=rows.join('')}
+const pWorkerSrc=`function mp(b,e,m){let r=1n;b%=m;while(e>0n){if(e&1n)r=r*b%m;b=b*b%m;e>>=1n}return r}
+onmessage=e=>{const L=e.data.L;const sv=new Uint8Array(L+1);const hits=[];let cnt=0;
+ for(let p=2;p<=L;p++){if(sv[p])continue;if(p<=Math.sqrt(L))for(let q=p*p;q<=L;q+=p)sv[q]=1;if(p<5)continue;cnt++;const P=BigInt(p);if(mp(2n,P-1n,P*P)===1n+P)hits.push(p);if(cnt%20000===0)postMessage({progress:p,hits})}
+ postMessage({done:true,hits,cnt})}`;
+const PW=URL.createObjectURL(new Blob([pWorkerSrc],{type:'text/javascript'}));let pworker=null;
+function searchPrimes(){let L=Math.round(+$('pIn').value);if(!(L>=1000))L=1000;if(L>2e7)L=2e7;$('pIn').value=L;
+  if(pworker)pworker.terminate();pworker=new Worker(PW);const t0=performance.now();
+  pworker.onmessage=e=>{const d=e.data;if(d.progress){$('pStatus').textContent=`checked primes up to ${d.progress.toLocaleString()} · found ${d.hits.join(', ')}`;return}
+    $('pStatus').textContent=`${d.cnt.toLocaleString()} primes 5 ≤ p ≤ ${L.toLocaleString()} in ${((performance.now()-t0)/1000).toFixed(1)} s`;
+    check($('pChecks'),[['info','(6.14)',`Primes with 2<sup>p−1</sup> ≡ 1 + p (mod p²), hence S(p) ∈ ℤ: <b class="mono">${d.hits.join(', ')||'none'}</b>. These are the first terms of OEIS A125854.`]])};
+  pworker.postMessage({L})}
+$('pGo').onclick=searchPrimes;
+
+// ---------- Experiment 5 ----------
+function runFourier(){let c=Math.round(+$('fIn').value);if(!(c>=2))c=2;if(c>400)c=400;$('fIn').value=c;
+  let L=Math.round(+$('fL').value);if(!(L>=101))L=101;if(L>100001)L=100001;if(L%2===0)L++;$('fL').value=L;
+  let N=0,N1=0;for(let d=1;d<=c;d++)for(let j=1;j<c;j++){const v=(2*j-c)*((Math.floor(d*j/c)&1)?-1:1);N+=v;if((d*j)%c===0)N1+=v}
+  const ex=(N-N1)/(2*c);const js=[];for(let j=1;j<c;j+=2)js.push(j);
+  const xs=[],ys=[];let s=0,next=1;const marks=[];
+  for(let l=1;l<=L;l+=2){let inner=0;for(const j of js)inner+=(j/c-.5)/Math.tan(Math.PI*l*j/(2*c));s+=inner/l;const v=4/Math.PI*s;
+    if(l>=next||l===L){xs.push(Math.log10(l));ys.push(v);next=Math.max(l+2,Math.round(l*1.01))}
+    if([1,11,101,1001,10001,100001].includes(l)||l===L)marks.push([l,v])}
+  const tailY=ys.filter((_,i)=>xs[i]>=1);const [lo,hi]=range((tailY.length?tailY:ys).concat([ex]),.15);
+  plot($('fChart'),{xr:[0,Math.log10(L)],yr:[lo,hi],xlabel:'log₁₀ L',ylabel:'partial sum',padL:62,yfmt:t=>t.toFixed(2),refs:[{y:ex,color:'--ok'}],series:[{type:'line',x:xs,y:ys,color:'--accent',end:true}]});
+  const last=marks[marks.length-1][1];
+  check($('fChecks'),[['ok','exact',`S₂(${c}) = ${frac(N-N1,2*c)} ≈ ${fmt(ex)} from the literal sum`],
+    [Math.abs(last-ex)<Math.max(.05,Math.abs(ex)*.002)?'ok':'info','Thm 6.10',marks.map(([l,v])=>`L = ${l.toLocaleString()}: ${fmt(v,4)}`).join(' · ')+` (error at L = ${L.toLocaleString()}: ${lbl((last-ex).toExponential(1))})`]]);
+  FOURIER=c}
+let FOURIER=0;
+$('fGo').onclick=runFourier;['fIn','fL'].forEach(id=>$(id).addEventListener('keydown',e=>{if(e.key==='Enter')runFourier()}));
+
+// ---------- Experiment 6 ----------
+let QMOD=3;const QS=[2,3,4,5,7,8,9,15,21,105];
+$('qChips').innerHTML=QS.map(q=>`<button class="chip" data-q="${q}" aria-pressed="${q===QMOD}">${q}</button>`).join('');
+$('qChips').addEventListener('click',e=>{const b=e.target.closest('[data-q]');if(!b)return;QMOD=+b.dataset.q;
+  $('qChips').querySelectorAll('[data-q]').forEach(x=>x.setAttribute('aria-pressed',String(+x.dataset.q===QMOD)));drawMod()});
+function kStats(q,a,N){const S=DATA.S;const sum=new Float64Array(q),n=new Float64Array(q);let tot=0,cnt=0;const ks=[];
+  for(let c=a;c<=N;c++){const k=-S[c]/c-Math.log(c)/4;ks.push([c,k]);sum[c%q]+=k;n[c%q]++;tot+=k;cnt++}
+  const mean=tot/cnt,m=Array.from(sum,(s,r)=>s/n[r]);let tv=0,bv=0;ks.forEach(([c,k])=>{tv+=(k-mean)**2;bv+=(m[c%q]-mean)**2});return {m,mean,R2:bv/tv}}
+function drawMod(){if(!DATA)return;const q=QMOD,N=DATA.N,a=Math.max(4,Math.ceil(N/2));const {m,mean,R2}=kStats(q,a,N);
+  const xs=m.map((_,r)=>r),[lo,hi]=range(m.concat([mean]),.25);
+  plot($('qChart'),{xr:[-.6,q-.4],yr:[Math.min(lo,mean),Math.max(hi,mean)],xlabel:'c mod '+q,ylabel:'mean K(c)',padL:58,yfmt:t=>t.toFixed(2),xfmt:t=>Number.isInteger(t)&&t>=0&&t<q?t:'',
+    refs:[{y:mean,color:'--ok'}],series:[{type:'bar',x:xs,y:m.map(v=>v),base:mean,bw:1,gap:q>30?1:.7,colorOf:i=>q>2&&i===q-1?'--pos':q>2&&i===1?'--neg':'--muted'}]});
+  const R=QS.map(qq=>[qq,kStats(qq,a,N).R2]);
+  check($('qChecks'),[
+    ['info','c mod '+q,`Residue class mod ${q} explains R² = ${(R2*100).toFixed(1)}% of the variance of K(c) over ${a} ≤ c ≤ ${N}. Random labels would give about ${((q-1)/(N-a)*100).toFixed(1)}%${(q-1)/(N-a)>.05?', so raise the range in Experiment 2 for a cleaner reading':''}.`+(q>2?` Highest mean at c ≡ ${m.indexOf(Math.max(...m))}, lowest at c ≡ ${m.indexOf(Math.min(...m))}.`:'')],
+    ['info','pattern',`R² by modulus: ${R.map(([qq,r])=>`${qq}: ${(r*100).toFixed(1)}%`).join(' · ')}. Powers of 2 explain almost nothing, while odd moduli explain a lot, and more as they gain prime factors. The mean is highest when q divides c + 1 and lowest when q divides c − 1.`]]);
+  drawFc(a,N)}
+function drawFc(a,N){const S=DATA.S,M=N+1,sp=new Float64Array(M+1);
+  for(let d=1;d<=M;d+=2){const w=phi(d)/(d*d);for(let n=d;n<=M;n+=d)sp[n]+=w}
+  const xs=[],ys=[];for(let c=a;c<=N;c++){xs.push(sp[c+1]-sp[c-1]);ys.push(-S[c]/c-Math.log(c)/4)}
+  const n=xs.length,mx=xs.reduce((p,q)=>p+q)/n,my=ys.reduce((p,q)=>p+q)/n;let sxy=0,sxx=0,syy=0;
+  for(let i=0;i<n;i++){sxy+=(xs[i]-mx)*(ys[i]-my);sxx+=(xs[i]-mx)**2;syy+=(ys[i]-my)**2}
+  const b=sxy/sxx,a0=my-b*mx,r=sxy/Math.sqrt(sxx*syy),[x0,x1]=range(xs),[y0,y1]=range(ys);
+  let rs=0;for(let i=0;i<n;i++)rs+=(ys[i]-a0-b*xs[i])**2;
+  plot($('fcChart'),{xr:[x0,x1],yr:[y0,y1],xlabel:'F(c)',ylabel:'K(c)',padL:58,yfmt:t=>t.toFixed(2),xfmt:t=>t.toFixed(1),
+    series:[{type:'dot',x:xs,y:ys,color:'--accent',r:1.6},{type:'line',x:[x0,x1],y:[a0+b*x0,a0+b*x1],color:'--ok',width:2}]});
+  check($('fcChecks'),[['info','fit',`K(c) ≈ ${lbl(a0.toFixed(4))} + ${b.toFixed(4)}·F(c), correlation r = ${r.toFixed(3)}, so F explains ${(r*r*100).toFixed(1)}% of the variance. The leftover spread is ±${Math.sqrt(rs/n).toFixed(3)}, down from ±${Math.sqrt(syy/n).toFixed(3)}.`],
+    ['info','reading',`The intercept is the mean of K(c), about −0.263, because F(c) averages to 0. So F accounts for much of the fluctuation, but not for the gap between −0.263 and the constant −0.029 in (6.18).`]])}
+
+// ---------- boot + theme/resize ----------
+function redrawAll(){drawHeat($('heroHeat'),89);if(ONE.c){drawHeat();drawRows()}drawGrowth();drawSums();drawMod();if(FOURIER)runFourier()}
+let rt;addEventListener('resize',()=>{clearTimeout(rt);rt=setTimeout(redrawAll,120)});
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change',redrawAll);
+new MutationObserver(redrawAll).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+document.fonts&&document.fonts.ready.then(redrawAll);
+drawHeat($('heroHeat'),89);renderOne();primeTable();runRange();searchPrimes();runFourier();
+</script>
+
+</body>
+</html>

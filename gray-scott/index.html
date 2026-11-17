@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Gray–Scott Explorer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+  <link rel="stylesheet" href="style.css">
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body data-mode="plane">
+  <header class="masthead">
+    <div class="brand">
+      <span class="mark" aria-hidden="true"></span>
+      <div>
+        <h1>Gray–Scott Explorer</h1>
+        <p class="sub">Reaction–diffusion patterns on the plane and on curved surfaces · <a href="../#research" style="color:inherit">← Boyan (Karina) Li</a></p>
+      </div>
+    </div>
+    <nav class="segmented tabs" aria-label="Domain">
+      <button data-mode="plane" class="active">Plane</button>
+      <button data-mode="surface">Curved surface</button>
+    </nav>
+  </header>
+
+  <main>
+    <section class="stage-wrap">
+      <div class="stage">
+        <div id="plane-view" class="view"><canvas id="plane-canvas" width="1024" height="1024"></canvas></div>
+        <div id="surface-view" class="view" hidden></div>
+        <div class="hud" id="hud"></div>
+        <div class="alert" id="alert" hidden></div>
+      </div>
+      <p class="hint" id="hint"></p>
+      <div class="equation" id="equation">
+        ∂u/∂t = Dᵤ∇²u − uv² + F(1 − u),&nbsp;&nbsp; ∂v/∂t = Dᵥ∇²v + uv² − (F + k)v
+      </div>
+
+      <div class="explainer">
+        <article>
+          <h3><span>01</span>What you are seeing</h3>
+          <p>Two chemicals diffuse and react. <i>u</i> is fed in at rate <i>F</i>; <i>v</i> turns <i>u</i> into more of itself
+            (<i>u</i> + 2<i>v</i> → 3<i>v</i>) and is removed at rate <i>F</i> + <i>k</i>. Bright regions are high <i>v</i>.</p>
+        </article>
+        <article>
+          <h3><span>02</span>Why patterns form</h3>
+          <p>Diffusion usually smooths things out. Turing (1952) showed that when two species diffuse at different speeds,
+            diffusion can instead <i>destabilise</i> a uniform state and select a preferred wavelength. The right-hand panels
+            compute exactly where that happens.</p>
+        </article>
+        <article>
+          <h3><span>03</span>On curved surfaces</h3>
+          <p>On a surface the Laplacian becomes the Laplace–Beltrami operator, discretised here with the cotangent formula.
+            Compare where spots settle on the inside and outside of a torus, where the Gaussian curvature changes sign.</p>
+        </article>
+      </div>
+    </section>
+
+    <aside class="panel">
+      <section class="card">
+        <h2><span>A</span>Pattern</h2>
+        <select id="preset"></select>
+        <div id="sliders"></div>
+      </section>
+
+      <section class="card">
+        <h2><span>B</span>Simulation</h2>
+        <div class="buttons">
+          <button id="play" class="primary">Pause</button>
+          <button id="reset">Reset</button>
+          <button id="seed">Add seeds</button>
+          <button id="clear">Clear</button>
+        </div>
+        <div class="row">
+          <span>Show</span>
+          <div class="segmented small" id="species">
+            <button data-species="v" class="active">v</button>
+            <button data-species="u">u</button>
+          </div>
+        </div>
+        <div class="row">
+          <span>Palette</span>
+          <div class="swatches" id="palettes"></div>
+        </div>
+        <div class="row plane-only">
+          <span>Grid</span>
+          <select id="resolution">
+            <option value="128">128 × 128</option>
+            <option value="256" selected>256 × 256 · Pearson</option>
+            <option value="512">512 × 512</option>
+          </select>
+        </div>
+        <div class="surface-only">
+          <div class="row">
+            <span>Shape</span>
+            <select id="shape"></select>
+          </div>
+          <label class="row"><span>Size</span><input type="range" id="scale" min="0.25" max="0.8" step="0.01" value="0.5"><output id="scale-out"></output></label>
+          <label class="row"><span>Relief</span><input type="range" id="relief" min="0" max="0.15" step="0.005" value="0.06"><output id="relief-out"></output></label>
+          <label class="check"><input type="checkbox" id="paint-mode"> Paint mode (drag paints instead of rotating)</label>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2><span>C</span>Parameter map</h2>
+        <canvas id="phase-map"></canvas>
+        <ul class="legend" id="legend"></ul>
+        <p class="note">Click the map to choose (k, F). Dots are the presets; the dashed curve is the saddle-node k = √F/2 − F.</p>
+      </section>
+
+      <section class="card">
+        <h2><span>D</span>Linear stability</h2>
+        <canvas id="dispersion"></canvas>
+        <div id="summary" class="summary"></div>
+      </section>
+    </aside>
+  </main>
+
+  <footer>
+    J. E. Pearson, “Complex patterns in a simple system,” <i>Science</i> 261 (1993) 189–192 ·
+    A. M. Turing, “The chemical basis of morphogenesis,” <i>Phil. Trans. R. Soc. B</i> 237 (1952) 37–72
+  </footer>
+
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>
