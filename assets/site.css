@@ -292,4 +292,3 @@ img.zoomable { cursor: zoom-in; }
   .theme-btn { width: 30px; height: 30px; flex: none; }
 }
 
-.ai-note { font-size: 14px !important; color: var(--muted); border-left: 3px solid var(--accent-2); padding: 6px 0 6px 12px; }
